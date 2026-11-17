@@ -9,32 +9,45 @@ public class ConveyorSpawner : MonoBehaviour
     [SerializeField] private GameObject InclineConveyorPrefab;
 
     [SerializeField] private Transform spawnPoint;
+    public ProductMovement movement;
     public void SpawnShortConveyor()
     {
-        Instantiate(
+        if (!Grabber.isDemoStart)
+        {
+            Instantiate(
             ShortConveyorPrefab,
             spawnPoint.position,
-            ShortConveyorPrefab.transform.rotation
-        );
+            ShortConveyorPrefab.transform.rotation);
+        }
     }
+    
 
     public void SpawnLongConveyor()
     {
-        Instantiate(
+        if (!Grabber.isDemoStart)
+        {
+            Instantiate(
             LongConveyorPrefab,
             spawnPoint.position,
-            LongConveyorPrefab.transform.rotation
-        );
+            LongConveyorPrefab.transform.rotation);
+        }
     }
 
     public void SpawnInclineConveyor()
     {
-        Instantiate(
+        if (!Grabber.isDemoStart)
+        {
+            Instantiate(
             InclineConveyorPrefab,
             spawnPoint.position,
-            InclineConveyorPrefab.transform.rotation
-        );
+            InclineConveyorPrefab.transform.rotation);
+        }
     }
 
+    public void ProductDemo()
+    {
+        if (!Grabber.isDemoStart)
+        { movement.startProduct(); }
+    }
 
 }

@@ -5,18 +5,24 @@ using UnityEngine;
 public class Grabber : MonoBehaviour
 {
     private Snapping snapping;
-    private GameObject selectObject;
-    private bool isDragging = false;
+    public static bool isDemoStart;
+    public static GameObject selectObject;
+    public ConveyorManager conveyorManager;
+
 
     private void Start()
     {
         snapping = new Snapping();
+        isDemoStart = false;
+        //conveyorManager = GetComponent<ConveyorManager>();
     }
     private void Update()
     {
+        if (isDemoStart) { return; }
         if (Input.GetMouseButtonDown(0))
         {
             // Select Object
+            
             if (selectObject == null)
             {
                 RaycastHit hit = CastRay();
@@ -28,6 +34,7 @@ public class Grabber : MonoBehaviour
                     }
 
                     selectObject = hit.collider.gameObject;
+                    conveyorManager.DetachConveyor(selectObject.GetComponent<Conveyor>());
                     Cursor.visible = false;
                 }
 
@@ -39,12 +46,13 @@ public class Grabber : MonoBehaviour
             Vector3 position = new Vector3(Input.mousePosition.x, Input.mousePosition.y,
                 Camera.main.WorldToScreenPoint(selectObject.transform.position).z);
             Vector3 worldPosition = Camera.main.ScreenToWorldPoint(position);
-            selectObject.transform.position = new Vector3(worldPosition.x, .25f, worldPosition.z);
+            selectObject.transform.position = new Vector3(worldPosition.x, 0, worldPosition.z);
         }
 
         // Release Object
         if (Input.GetMouseButtonUp(0) && selectObject != null)
         {
+            conveyorManager.DetachConveyor(selectObject.GetComponent<Conveyor>());
             BoxCollider box = selectObject.GetComponent<BoxCollider>();
             Collider[] hits = Physics.OverlapBox(box.bounds.center,
                 box.bounds.extents,
@@ -57,15 +65,33 @@ public class Grabber : MonoBehaviour
                     continue;
                 if (hit.gameObject.CompareTag("Conveyor"))
                 {
-                    Transform newPosition = snapping.calculateNewPosition(selectObject.transform, hit.transform);
+                    bool isSelectBeforeTarget;
+                    Transform newPosition = snapping.calculateNewPosition(selectObject.transform, hit.transform, out isSelectBeforeTarget);
                     selectObject.transform.position = newPosition.position;
+
+                    // Adding the Conveyor to list
+                    Conveyor oldCon = hit.gameObject.GetComponent<Conveyor>();
+                    Conveyor selectCon = selectObject.GetComponent<Conveyor>();
+                    if (isSelectBeforeTarget)
+                    {
+                        conveyorManager.AddConveyor(selectCon, oldCon);
+                    }
+                    else
+                    {
+                        conveyorManager.AddConveyor(oldCon, selectCon);
+                    }
+
                     Debug.Log("Overlapping!" + hit.name);
                 }
             }
+
+            
+
             selectObject = null;
-            isDragging = false;
             Cursor.visible = true;
         }
+        
+
     }
 
     private RaycastHit CastRay()
