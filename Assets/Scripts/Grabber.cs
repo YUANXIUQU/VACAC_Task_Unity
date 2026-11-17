@@ -1,0 +1,89 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Grabber : MonoBehaviour
+{
+    private Snapping snapping;
+    private GameObject selectObject;
+    private bool isDragging = false;
+
+    private void Start()
+    {
+        snapping = new Snapping();
+    }
+    private void Update()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            // Select Object
+            if (selectObject == null)
+            {
+                RaycastHit hit = CastRay();
+                if (hit.collider != null)
+                {
+                    if (!hit.collider.CompareTag("Conveyor"))
+                    {
+                        return;
+                    }
+
+                    selectObject = hit.collider.gameObject;
+                    Cursor.visible = false;
+                }
+
+            }
+        }
+
+        if (selectObject != null && Input.GetMouseButton(0))
+        {
+            Vector3 position = new Vector3(Input.mousePosition.x, Input.mousePosition.y,
+                Camera.main.WorldToScreenPoint(selectObject.transform.position).z);
+            Vector3 worldPosition = Camera.main.ScreenToWorldPoint(position);
+            selectObject.transform.position = new Vector3(worldPosition.x, .25f, worldPosition.z);
+        }
+
+        // Release Object
+        if (Input.GetMouseButtonUp(0) && selectObject != null)
+        {
+            BoxCollider box = selectObject.GetComponent<BoxCollider>();
+            Collider[] hits = Physics.OverlapBox(box.bounds.center,
+                box.bounds.extents,
+                Quaternion.identity);
+
+
+            foreach (Collider hit in hits)
+            {
+                if (hit.transform.root == selectObject.transform.root)
+                    continue;
+                if (hit.gameObject.CompareTag("Conveyor"))
+                {
+                    Transform newPosition = snapping.calculateNewPosition(selectObject.transform, hit.transform);
+                    selectObject.transform.position = newPosition.position;
+                    Debug.Log("Overlapping!" + hit.name);
+                }
+            }
+            selectObject = null;
+            isDragging = false;
+            Cursor.visible = true;
+        }
+    }
+
+    private RaycastHit CastRay()
+    {
+        Vector3 screenMousePosFar = new Vector3(Input.mousePosition.x,
+            Input.mousePosition.y,
+            Camera.main.farClipPlane);
+
+        Vector3 screenMousePosNear = new Vector3(Input.mousePosition.x,
+            Input.mousePosition.y,
+            Camera.main.nearClipPlane);
+
+        Vector3 worldMousePosFar = Camera.main.ScreenToWorldPoint(screenMousePosFar);
+        Vector3 worldMousePosNear = Camera.main.ScreenToWorldPoint(screenMousePosNear);
+        RaycastHit hit;
+        Physics.Raycast(worldMousePosNear, worldMousePosFar - worldMousePosNear, out hit);
+
+        return hit;
+    }
+
+}
